@@ -5,7 +5,7 @@ from .summary_result import SummaryResult
 
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-async def summarize_and_identify_topics(text):
+async def get_summary(text):
     loop = asyncio.get_event_loop()
     def run():
         prompt = f"Summarize the following article and list its main topics:\n\n{text}"
@@ -14,6 +14,5 @@ async def summarize_and_identify_topics(text):
             messages=[{"role": "user", "content": prompt}]
         )
         summary = response.choices[0].message.content
-        topics = summary.split('\n')
-        return SummaryResult(summary, topics)
+        return summary
     return await loop.run_in_executor(None, run)
