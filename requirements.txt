@@ -1,0 +1,11 @@
+requests
+beautifulsoup4
+openai
+langchain
+chromadb
+python-dotenv
+transformers
+torch
+keybert
+newspaper3k
+lxml[html_clean]
