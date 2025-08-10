@@ -9,3 +9,4 @@ torch
 keybert
 newspaper3k
 lxml[html_clean]
+yake
