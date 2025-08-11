@@ -1,11 +1,11 @@
 import asyncio
-from articles_poller import ArticlesPoller
-from articles_processor import ArticlesProcessor
+from src.articles_poller import ArticlesPoller
+from src.articles_processor import ArticlesProcessor
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
-from vector_dbs.FAISS_vector_db import LangChainFAISSVectorDB
-from vector_dbs.base_vector_db import BaseVectorDB
-from genai import get_summarizer, get_topics_resolver
+from src.vector_dbs.FAISS_vector_db import LangChainFAISSVectorDB
+from src.vector_dbs.base_vector_db import BaseVectorDB
+from src.genai import get_summarizer, get_topics_resolver
 
 async def main():
     # Start workers for articles and sync

@@ -2,7 +2,7 @@ import asyncio
 import time
 import threading
 import logging
-from articles_sync import load_json, ARTICLES_JSON
+from src.articles_sync import load_json, ARTICLES_JSON
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from src.vector_dbs.base_vector_db import BaseVectorDB
 from src.vector_dbs.article_result import ArticleResult

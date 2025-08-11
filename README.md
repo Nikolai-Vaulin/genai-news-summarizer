@@ -11,12 +11,6 @@ A GenAI-powered news summarizer with async workers, modular vector DB, configura
 - Summarization and topic extraction
 - Configurable summarizers and topics resolvers
 
-## Usage
-
-1. Configure articles by adding URLs to `articles_urls.json` (the poller will fetch and update data automatically), or manually add articles to `articles.json`.
-2. Run `main.py` to start the app.
-3. Use the interactive console to search, view summaries, or interact with the summarizer.
-
 ## Environment Configuration
 
 If you want to use OpenAI-based summarizers ortopics resolvers, you must set the `OPENAI_API_KEY` parameter in your `.env` file:
@@ -25,14 +19,41 @@ If you want to use OpenAI-based summarizers ortopics resolvers, you must set the
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-## Requirements
 
-- Python 3.13+
-- FAISS
-- transformers
-- prompt_toolkit
-- langchain
-- newspaper3k
+## Usage
+
+1. Install the required dependencies 
+   ```
+   pip install -r requirements.txt
+   ```
+2. Configure articles by adding URLs to `articles_urls.json` (the poller will fetch and update data automatically), or manually add articles to `articles.json`.
+2. Run `main.py` to start the app.
+   ```
+   python -m src.main
+   ```
+3. You can add URLs to `articles_urls.json` to have the poller fetch and update data automatically.
+4. Use the interactive console to search, view summaries, or interact with the summarizer.
+
+
+## Requirements
+Can be found in the `requirements.txt` file.
+
+- Python 3.13+: Main language runtime
+- requests: HTTP requests for web scraping and API calls
+- beautifulsoup4: HTML parsing for article extraction
+- openai: Access to OpenAI API for summarization and topic extraction
+- langchain: Framework for building language model applications
+- chromadb: Vector database (previously used, now replaced by FAISS)
+- python-dotenv: Loads environment variables from .env files
+- transformers: HuggingFace library for NLP models (summarization)
+- torch: Deep learning backend for transformers
+- keybert: Keyword extraction using BERT embeddings
+- newspaper3k: News article scraping and parsing
+- lxml[html_clean]: Fast HTML/XML parsing and cleaning
+- yake: Yet Another Keyword Extractor (unsupervised topic extraction)
+- faiss-cpu: Facebook AI Similarity Search, used as the main vector DB
+- langchain_community: Community extensions for langchain
+- prompt_toolkit: Interactive console and command-line interface
 
 ## Project Structure
 
