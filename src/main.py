@@ -5,6 +5,7 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 from vector_dbs.FAISS_vector_db import LangChainFAISSVectorDB
 from vector_dbs.base_vector_db import BaseVectorDB
+from genai import get_summarizer, get_topics_resolver
 
 async def main():
     # Start workers for articles and sync
@@ -14,7 +15,7 @@ async def main():
     articles_poller.ready_event.wait()
     print("Articles poller finished syncing. Waiting for articles processor...")
     vector_db_client = await create_vector_db_client()
-    articles_processor = ArticlesProcessor(vector_db_client)
+    articles_processor = ArticlesProcessor(get_summarizer(), get_topics_resolver(), vector_db_client)
     await articles_processor.start()
     articles_processor.ready_event.wait()
     print("Articles processor finished syncing. You can now enter commands.")
@@ -30,7 +31,7 @@ async def console_input_loop(articles_poller, articles_processor, vector_db_clie
             cmd = user_input.strip().lower()
             if cmd.startswith("search"):
                 query = user_input.strip()[6:].strip()
-                await search_query(query, vector_db_client)
+                await semantic_search(query, vector_db_client)
             elif cmd in ("exit", "quit"):
                 print("Exiting program...")
                 articles_poller.stop()
@@ -38,23 +39,6 @@ async def console_input_loop(articles_poller, articles_processor, vector_db_clie
                 break
             else:
                 print("Unknown command. Type 'search <your query>' to search, or 'exit'/'quit' to close the app.")
-
-async def search_query(query, vector_db_client: BaseVectorDB):
-    if not query:
-        print("Please provide search terms after 'search'.")
-        return
-    print(f"Running semantic search for: {query}")
-    results = await semantic_search(query, vector_db_client)
-    if not results:
-        print("No results found.")
-    else:
-        for i, item in enumerate(results, 1):
-            print(f"Result {i}:")
-            print(f"  Headline: {item['headline']}")
-            print(f"  Summary: {item['summary']}")
-            print(f"  Topics: {item['topics']}")
-            print(f"  URL: {item['url']}")
-            print(f"  Distance: {item['distance']}")
 
 async def semantic_search(query, vector_db_client: BaseVectorDB):
     if not query:

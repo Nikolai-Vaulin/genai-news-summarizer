@@ -3,19 +3,22 @@ import time
 import threading
 import logging
 from articles_sync import load_json, ARTICLES_JSON
-from genai import summarize_and_identify_topics
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from src.vector_dbs.base_vector_db import BaseVectorDB
 from src.vector_dbs.article_result import ArticleResult
+from src.models.summary_result import SummaryResult
+from src.models.base import BaseSummarizer, BaseTopicsResolver
 
 class ArticlesProcessor:
     logger = None
-    def __init__(self, client: BaseVectorDB, poll_interval=2):
+    def __init__(self, summarizer: BaseSummarizer, topics_resolver: BaseTopicsResolver, client: BaseVectorDB, poll_interval=2):
         self._init_logger()
         self.client = client
         self.poll_interval = poll_interval
         self.last_articles = None
         self._stop_event = threading.Event()
+        self.summarizer = summarizer
+        self.topics_resolver = topics_resolver
         self.ready_event = threading.Event()
         self._thread = threading.Thread(target=self._thread_entry, daemon=True)
         self._text_splitter = RecursiveCharacterTextSplitter(
@@ -49,8 +52,8 @@ class ArticlesProcessor:
         await self.sync_articles_db()
         self.ready_event.set()
         while not self._stop_event.is_set():
-            await self.sync_articles_db()
             await asyncio.sleep(self.poll_interval)
+            await self.sync_articles_db()
 
     async def sync_articles_db(self):
         articles = load_json(ARTICLES_JSON)
@@ -67,7 +70,6 @@ class ArticlesProcessor:
                 await self._process_article(article)
             except Exception as e:
                 self.logger.error(f"Failed to sync article {article.get('url')}: {e}")
-        self.logger.info("Finished syncing articles with vector DB.")
 
     async def _process_article(self, article):
         self.logger.info(f"Processing article {article.get('url')}...")
@@ -75,12 +77,17 @@ class ArticlesProcessor:
         self.logger.info(f"Split into {len(chunks)} chunks.")
         for i, chunk in enumerate(chunks):
             self.logger.info(f"Processing chunk {i + 1}/{len(chunks)}...")
-            summary_with_topics = await summarize_and_identify_topics(chunk)
+            summary_with_topics = await self._summarize_and_identify_topics(chunk)
             self.logger.info(f"Summary: {summary_with_topics.summary[:50]}... Topics: {summary_with_topics.topics}")
             article_obj = ArticleResult(article.get('url'), article.get('headline'), chunk)
             self.logger.info(f"Adding article {article.get('url')} to vector DB...")
             await self.client.add_article_to_db(article_obj, summary_with_topics)
         self.logger.info(f"Synced article {article.get('url')} with vector DB.")
+    
+    async def _summarize_and_identify_topics(self, chunk: str):
+        summary_result = await self.summarizer.summarize(chunk)
+        topics = await self.topics_resolver.resolve_topics(chunk)
+        return SummaryResult(summary_result, topics)
     
     def stop(self):
         self._stop_event.set()

@@ -53,8 +53,8 @@ class ArticlesPoller:
         await self.sync_new_articles()
         self.ready_event.set()
         while not self._stop_event.is_set():
-            await self.sync_new_articles()
             await asyncio.sleep(self.poll_interval)
+            await self.sync_new_articles()
 
     async def sync_new_articles(self):
         new_urls = self.get_new_urls()
