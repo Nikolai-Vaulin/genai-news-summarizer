@@ -2,7 +2,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.docstore import InMemoryDocstore
 import faiss
 
-from src.base_vector_db import BaseVectorDB
+from src.vector_dbs.base_vector_db import BaseVectorDB
 
 class LangChainFAISSVectorDB(BaseVectorDB):
     def __init__(self, dim=768):
@@ -17,7 +17,6 @@ class LangChainFAISSVectorDB(BaseVectorDB):
         self.ids.append(id)
         self.faiss_db.add_texts([doc], metadatas=[meta])
 
-    def search(self, query, k=5):
+    async def search(self, query, k=5):
         results = self.faiss_db.similarity_search_with_score(query, k=k)
-
         return results

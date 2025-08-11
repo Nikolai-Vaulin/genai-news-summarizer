@@ -1,38 +1,58 @@
 import asyncio
 import time
 import threading
+import logging
 from articles_sync import load_json, ARTICLES_JSON
 from genai import summarize_and_identify_topics
-from vector_db import get_vector_db, add_article_to_db
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-
+from src.vector_dbs.base_vector_db import BaseVectorDB
+from src.vector_dbs.article_result import ArticleResult
 
 class ArticlesProcessor:
-    def __init__(self, poll_interval=2):
+    logger = None
+    def __init__(self, client: BaseVectorDB, poll_interval=2):
+        self._init_logger()
+        self.client = client
         self.poll_interval = poll_interval
         self.last_articles = None
-        self.client = None
         self._stop_event = threading.Event()
         self.ready_event = threading.Event()
-        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread = threading.Thread(target=self._thread_entry, daemon=True)
         self._text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=2048,
             chunk_overlap=50,
             length_function=len
         )
 
+    def _init_logger(self):
+        if ArticlesProcessor.logger is None:
+            logger = logging.getLogger("ArticlesProcessor")
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+            handler.setFormatter(formatter)
+            if not logger.hasHandlers():
+                logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
+            ArticlesProcessor.logger = logger
+        self.logger = ArticlesProcessor.logger
 
     async def start(self):
-        if self.client is None:
-            self.client = await get_vector_db()
         self._thread.start()
 
-    def _run(self):
-        while not self._stop_event.is_set():
-            self.sync_articles_db()
-            time.sleep(self.poll_interval)
+    def _thread_entry(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self._run())
+        loop.close()
 
-    def sync_articles_db(self):
+    async def _run(self):
+        await self.sync_articles_db()
+        self.ready_event.set()
+        while not self._stop_event.is_set():
+            await self.sync_articles_db()
+            await asyncio.sleep(self.poll_interval)
+
+    async def sync_articles_db(self):
         articles = load_json(ARTICLES_JSON)
         # Get existing article IDs from FAISS DB
         try:
@@ -44,26 +64,23 @@ class ArticlesProcessor:
             if article_id in existing_ids:
                 continue
             try:
-                print(f"Processing article {article.get('url')}...")
-                chunks = self._text_splitter.split_text(article['text'])
-                print(f"Split into {len(chunks)} chunks.    ")
-                for i, chunk in enumerate(chunks):
-                    print(f"Processing chunk {i + 1}/{len(chunks)}...")
-                    summary_with_topics = asyncio.run(summarize_and_identify_topics(chunk))
-                    print(f"Summary: {summary_with_topics.summary[:50]}... Topics: {summary_with_topics.topics}")
-                    # Create a minimal ArticleResult for vector DB
-                    class ArticleResult:
-                        def __init__(self, url, headline, text):
-                            self.url = url
-                            self.headline = headline
-                            self.text = text
-                    article_obj = ArticleResult(article.get('url'), article.get('headline'), chunk)
-                    print(f"Adding article {article.get('url')} to vector DB...")
-                    asyncio.run(add_article_to_db(self.client, article_obj, summary_with_topics))
-                print(f"Synced article {article.get('url')} with vector DB.")
+                await self._process_article(article)
             except Exception as e:
-                print(f"Failed to sync article {article.get('url')}: {e}")
-        self.ready_event.set()
+                self.logger.error(f"Failed to sync article {article.get('url')}: {e}")
+        self.logger.info("Finished syncing articles with vector DB.")
+
+    async def _process_article(self, article):
+        self.logger.info(f"Processing article {article.get('url')}...")
+        chunks = self._text_splitter.split_text(article['text'])
+        self.logger.info(f"Split into {len(chunks)} chunks.")
+        for i, chunk in enumerate(chunks):
+            self.logger.info(f"Processing chunk {i + 1}/{len(chunks)}...")
+            summary_with_topics = await summarize_and_identify_topics(chunk)
+            self.logger.info(f"Summary: {summary_with_topics.summary[:50]}... Topics: {summary_with_topics.topics}")
+            article_obj = ArticleResult(article.get('url'), article.get('headline'), chunk)
+            self.logger.info(f"Adding article {article.get('url')} to vector DB...")
+            await self.client.add_article_to_db(article_obj, summary_with_topics)
+        self.logger.info(f"Synced article {article.get('url')} with vector DB.")
     
     def stop(self):
         self._stop_event.set()

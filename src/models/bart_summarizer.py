@@ -6,7 +6,7 @@ summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 async def get_summary(text) -> str:
     loop = asyncio.get_event_loop()
     def run():
-        # Truncate input to 512 tokens (BART's max input)
+        # Truncate input to 512 tokens
         input_max_length = 512
         words = text.split()
         if len(words) > input_max_length:

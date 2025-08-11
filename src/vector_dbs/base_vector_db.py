@@ -1,8 +1,11 @@
+import asyncio
 import faiss
 from abc import ABC, abstractmethod
 import numpy as np
 import torch
 from transformers import AutoTokenizer, AutoModel
+from src.models.article_result import ArticleResult
+from src.models.summary_result import SummaryResult
 
 class BaseVectorDB(ABC):
     def __init__(self, dim=384, model_name="sentence-transformers/distiluse-base-multilingual-cased-v2"):
@@ -29,8 +32,21 @@ class BaseVectorDB(ABC):
         pass
 
     @abstractmethod
-    def search(self, query, k=5):
+    async def search(self, query, k=5):
         pass
 
     def get_all(self):
         return self.docs, self.metas
+
+    @staticmethod
+    def build_metadata(article: ArticleResult, summary: SummaryResult):
+        return {
+            "url": article.url,
+            "headline": article.headline,
+            "topics": summary.topics,
+            "summary": summary.summary
+        }
+
+    async def add_article_to_db(self, article: ArticleResult, summary_with_topics: SummaryResult):
+        meta = self.build_metadata(article, summary_with_topics)
+        self.add(article.text, meta, article.url)

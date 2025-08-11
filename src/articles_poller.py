@@ -3,41 +3,80 @@ import time
 import threading
 import json
 import os
-from scraper import extract_article
+import logging
+from newspaper import Article
+import asyncio
+from src.models.article_result import ArticleResult
+
 
 # Monitor articles_urls.json for changes and fetch new articles
 class ArticlesPoller:
+    def _thread_entry(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self._run())
+        loop.close()
+
+    logger = None
+
     def __init__(self, poll_interval=2):
+        self._init_logger()
         self.poll_interval = poll_interval
         self.last_urls = set()
         self._stop_event = threading.Event()
-        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread = threading.Thread(target=self._thread_entry, daemon=True)
         self.ready_event = threading.Event()
+
+    def _init_logger(self):
+        if ArticlesPoller.logger is None:
+            logger = logging.getLogger("ArticlesPoller")
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+            handler.setFormatter(formatter)
+            if not logger.hasHandlers():
+                logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
+            ArticlesPoller.logger = logger
+        self.logger = ArticlesPoller.logger
 
     async def start(self):
         self._thread.start()
 
     def _run(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self._run())
+        loop.close()
+
+    async def _run(self):
         # Signal ready after first sync
-        self.sync_new_articles()
+        await self.sync_new_articles()
         self.ready_event.set()
         while not self._stop_event.is_set():
-            self.sync_new_articles()
-            time.sleep(self.poll_interval)
+            await self.sync_new_articles()
+            await asyncio.sleep(self.poll_interval)
 
-    def sync_new_articles(self):
+    async def sync_new_articles(self):
         new_urls = self.get_new_urls()
         for url in new_urls:
             try:
-                article = asyncio.run(extract_article(url))
+                article = await self._extract_article(url)
                 self.add_article({
                     "url": article.url,
                     "headline": article.headline,
                     "text": article.text
                 })
-                print(f"Added raw article for {url}")
+                self.logger.info(f"Added raw article for {url}")
             except Exception as e:
-                print(f"Failed to fetch article for {url}: {e}")
+                self.logger.error(f"Failed to fetch article for {url}: {e}")
+
+    async def _extract_article(self,url):
+        article = Article(url)
+        self.logger.info(f"Downloading article from {url}...")
+        article.download()
+        self.logger.info(f"Parsing article from {url}...")
+        article.parse()
+        return ArticleResult(url, article.title, article.text)
 
     @staticmethod
     def load_json(path):
@@ -76,5 +115,3 @@ class ArticlesPoller:
     def stop(self):
         self._stop_event.set()
         self._thread.join()
-
-
