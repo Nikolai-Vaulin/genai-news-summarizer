@@ -8,18 +8,18 @@ async def get_summary(text) -> str:
     def run():
         # Truncate input to 512 tokens (BART's max input)
         input_max_length = 512
-        summary_max_length = 200  # Reasonable summary output length
         words = text.split()
         if len(words) > input_max_length:
             truncated_text = " ".join(words[:input_max_length])
         else:
             truncated_text = text
+        # Set summary_max_length to min(200, input length)
+        summary_max_length = min(200, len(truncated_text.split()))
         summary_result = summarizer(
             truncated_text,
             max_length=summary_max_length,
             min_length=30,
-            do_sample=False,
-            truncation=True
+            do_sample=False
         )
         if summary_result and 'summary_text' in summary_result[0]:
             summary_text = summary_result[0]['summary_text']

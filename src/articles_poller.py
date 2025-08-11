@@ -12,11 +12,15 @@ class ArticlesPoller:
         self.last_urls = set()
         self._stop_event = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
+        self.ready_event = threading.Event()
 
-    def start(self):
+    async def start(self):
         self._thread.start()
 
     def _run(self):
+        # Signal ready after first sync
+        self.sync_new_articles()
+        self.ready_event.set()
         while not self._stop_event.is_set():
             self.sync_new_articles()
             time.sleep(self.poll_interval)

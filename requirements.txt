@@ -10,3 +10,6 @@ keybert
 newspaper3k
 lxml[html_clean]
 yake
+faiss-cpu
+langchain_community
+prompt_toolkit
