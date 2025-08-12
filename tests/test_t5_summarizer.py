@@ -1,5 +1,5 @@
 import pytest
-from src.models.t5_summarizer import get_summary
+from src.models.t5_summarizer_class import T5Summarizer
 
 def load_long_article():
     with open("tests/testData/long_article.txt", encoding="utf-8") as f:
@@ -8,7 +8,8 @@ def load_long_article():
 @pytest.mark.asyncio
 async def test_t5_summarizer_various_lengths():
     text = load_long_article()
-    summary = await get_summary(text)
+    summarizer = T5Summarizer()
+    summary = await summarizer.summarize(text)
     assert isinstance(summary, str)
     assert len(summary) > 0
     if len(text) > 1024:

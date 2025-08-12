@@ -124,6 +124,14 @@ After starting the application, you can use the following commands in the intera
 - `exit` or `quit`: Exit the application.
 Planned: In future versions, console commands will be added to allow users to add article URLs and articles directly from the interactive console.
 
+## Tests
+
+The project includes tests for the main components, including summarizers and vector DB functionality. To run the tests, use:
+
+```
+pytest tests
+```
+
 ## Future Plans / TODO
 
 - Add more tests to cover additional cases and improve reliability.

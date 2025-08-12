@@ -1,5 +1,5 @@
 import pytest
-from src.models.bart_summarizer import get_summary
+from src.models.bart_summarizer_class import BartSummarizer
 
 
 def load_long_article():
@@ -12,13 +12,15 @@ def load_short_article():
 @pytest.mark.asyncio
 async def test_bart_summarizer_long_article_length():
     text = load_long_article()
-    summary = await get_summary(text)
+    summarizer = BartSummarizer()
+    summary = await summarizer.summarize(text)
     assert isinstance(summary, str)
     assert len(summary) > 0
 
 @pytest.mark.asyncio
 async def test_bart_summarizer_short_article_length():
     text = load_short_article()
-    summary = await get_summary(text)
+    summarizer = BartSummarizer()
+    summary = await summarizer.summarize(text)
     assert isinstance(summary, str)
     assert len(summary) > 0
