@@ -61,33 +61,17 @@ Can be found in the `requirements.txt` file.
 config.py
 README.md
 requirements.txt
-data/
+articles/
    articles.json
+   articles_urls.json
 src/
-   genai.py
-   main.py
-   scraper.py
-   semantic_search.py
-   articles_processor.py
-   articles_poller.py
+   -- contains application logic
    vector_dbs/
-      base_vector_db.py
-      vector_db.py
-      FAISS_vector_db.py
-      article_result.py
+      -- contains vector database implementations
    models/
-      bart_summarizer_class.py
-      t5_summarizer_class.py
-      openai_summarizer_class.py
-      keybert_topics_resolver.py
-      openai_topics_resolver.py
-      yake_topics_resolver.py
-      base.py
+      -- contains model implementations
 tests/
-   test_genai.py
-   test_scraper.py
-   test_semantic_search.py
-   test_vector_db.py
+   -- contains unit tests
 ```
 
 ## Customization

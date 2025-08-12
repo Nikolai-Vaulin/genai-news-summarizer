@@ -45,7 +45,7 @@ async def semantic_search(query, vector_db_client: BaseVectorDB):
         print("Please provide search terms after 'search'.")
         return
     print(f"Running semantic search for: {query}")
-    results = await vector_db_client.search(query)
+    results = await vector_db_client.search(query, k=3)
     items = [
                 {
                     "summary": result.metadata.get("summary", ""),
