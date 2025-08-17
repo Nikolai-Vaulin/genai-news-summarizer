@@ -4,27 +4,29 @@ from abc import ABC, abstractmethod
 import numpy as np
 import torch
 from transformers import AutoTokenizer, AutoModel
+from sentence_transformers import SentenceTransformer
 from src.models.article_result import ArticleResult
 from src.models.summary_result import SummaryResult
 
 class BaseVectorDB(ABC):
-    def __init__(self, dim=384, model_name="sentence-transformers/distiluse-base-multilingual-cased-v2"):
-        self.dim = dim
+    def __init__(self, model_name="sentence-transformers/distiluse-base-multilingual-cased-v2"):
         self.embeddings = []
         self.docs = []
         self.metas = []
         self.ids = []
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModel.from_pretrained(model_name)
-        self.index = faiss.IndexFlatL2(dim)
+        self.model = SentenceTransformer(model_name)
+        self.dim = self.model.get_sentence_embedding_dimension()
+        self.index = faiss.IndexFlatL2(self.dim)
 
     def embed(self, text):
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
-        with torch.no_grad():
-            model_output = self.model(**inputs)
-        embeddings = model_output.last_hidden_state.mean(dim=1).cpu().numpy()
-        emb = embeddings[0]
+        # inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+        # with torch.no_grad():
+        #     model_output = self.model(**inputs)
+        # embeddings = model_output.last_hidden_state.mean(dim=1).cpu().numpy()
+        # emb = embeddings[0]
         # No normalization for L2
+        emb = self.model.encode(text)
         return emb
 
     @abstractmethod

@@ -5,8 +5,8 @@ import faiss
 from src.vector_dbs.base_vector_db import BaseVectorDB
 
 class LangChainFAISSVectorDB(BaseVectorDB):
-    def __init__(self, dim=768):
-        super().__init__(dim)
+    def __init__(self):
+        super().__init__()
         docstore = InMemoryDocstore({})
         index_to_docstore_id = {}
         self.faiss_db = FAISS(embedding_function=self.embed, index=self.index, docstore=docstore, index_to_docstore_id=index_to_docstore_id)
